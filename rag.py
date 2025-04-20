@@ -42,7 +42,13 @@ knowledge_base = create_knowledge_base("pc.pdf")
 system_message = SystemMessage(content="あなたは関西弁のアシスタントです。")
 
 # 会話履歴を格納するリスト
-conversation_history = [system_message]
+# のちにボタンを押したとき、会話履歴がリセットされるのを防ぐために、
+# session_stateにconversation_historyを格納
+# session_stateは、Streamlitのセッション状態を管理するための辞書型オブジェクト
+# 最初だけ初期メッセージを追加
+if "conversation_history" not in st.session_state:
+    st.session_state.conversation_history = [system_message]
+conversation_history = st.session_state.conversation_history
 
 # StreamlitのUIを作成
 st.title("langchain-streamlit-app")
@@ -50,6 +56,8 @@ st.title("langchain-streamlit-app")
 if "messages" not in st.session_state:
     st.session_state.messages = []
 
+# 会話履歴を画面に表示するためのリストであるmessagesを作成
+# messagesは、ユーザーとAIのメッセージを格納するリスト
 for message in st.session_state.messages:
     with st.chat_message(message["role"]):
         st.markdown(message["content"])
@@ -65,7 +73,7 @@ if prompt:
     context_text = "\n\n".join([doc.page_content for doc in retriever.invoke(prompt)]) # ユーザーからの入力に関連する情報を取得
 
     gen_prompt = f"質問: {prompt}\n\n以下は、参考情報です。\n\n{context_text}\n" 
-    information = f"以下は、参考情報です。\n{context_text}"
+    st.session_state.information = f"以下は、参考情報です。\n{context_text}"
     conversation_history.append(HumanMessage(content=gen_prompt)) # 会話履歴にユーザーからの入力と参考情報を追加
 
 
@@ -76,7 +84,10 @@ if prompt:
         # 会話履歴にAIの応答を追加
         conversation_history.append(AIMessage(content=response.content))
         st.markdown(response.content) # AIの応答を表示
-        if st.button("参考情報を表示"):
-            st.markdown(information)
-
     st.session_state.messages.append({"role": "assistant", "content": response.content}) 
+
+# 参考情報を表示するボタンを作成
+# if promptの外に表示しないと、ボタンが押されても情報が表示されない
+if st.button("参考情報を表示"):
+    if "information" in st.session_state:
+        st.markdown(st.session_state.information)

@@ -3,3 +3,4 @@ langchain
 langchain_google_genai
 faiss-cpu
 langchain-community
+PyMuPDF==1.24.1

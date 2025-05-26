@@ -16,12 +16,14 @@ load_dotenv()
 llm = ChatGoogleGenerativeAI(model='gemini-1.5-flash')
 
 # pdfファイルを読み込み、検索可能なナレッジベースを作成する関数
-def create_knowledge_base(file_path):
+def create_knowledge_base(file_path1, file_path2):
     """
     テキストファイルを読み込み、検索可能なナレッジベースを作成
     """
-    with fitz.open(file_path) as doc:
-        raw_text = "\n".join(page.get_text() for page in doc) # PDFのテキストを取得
+    with fitz.open(file_path1) as doc1:
+        raw_text = "\n".join(page.get_text() for page in doc1) # PDFのテキストを取得
+    with fitz.open(file_path2) as doc2:
+        raw_text += "\n" + "\n".join(page.get_text() for page in doc2)
     # テキストをチャンクに分割
     # chunk_sizeはチャンクのサイズ、chunk_overlapはオーバーラップする文字数
     texts = CharacterTextSplitter(
@@ -36,10 +38,10 @@ def create_knowledge_base(file_path):
     # FAISSは、ベクトルストアの一種で、ベクトル検索を行うためのライブラリ
     return FAISS.from_documents(docs, HuggingFaceEmbeddings(model_name="all-mpnet-base-v2"))
 
-knowledge_base = create_knowledge_base("pc.pdf")
+knowledge_base = create_knowledge_base("p1a1.pdf", "p1a2.pdf")
 
 # 初期メッセージ
-system_message = SystemMessage(content="あなたは関西弁のアシスタントです。")
+system_message = SystemMessage(content="あなたは秋田弁のアシスタントです。")
 
 # 会話履歴を格納するリスト
 # のちにボタンを押したとき、会話履歴がリセットされるのを防ぐために、

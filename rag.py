@@ -2,8 +2,10 @@ import os
 from dotenv import load_dotenv
 import streamlit as st
 from langchain_google_genai import ChatGoogleGenerativeAI
+from langchain.document_loaders import AssemblyAIAudioTranscriptLoader
 from langchain_core.messages import SystemMessage, HumanMessage, AIMessage
 from langchain.text_splitter import CharacterTextSplitter
+from langchain.text_splitter import RecursiveCharacterTextSplitter
 from langchain.docstore.document import Document
 from langchain_community.vectorstores import FAISS
 from langchain_community.embeddings import HuggingFaceEmbeddings
@@ -15,8 +17,43 @@ load_dotenv()
 # モデルはGemini-1.5-flashを指定
 llm = ChatGoogleGenerativeAI(model='gemini-1.5-flash')
 
+def get_audio_transcript(file_list):
+    """
+    AssemblyAIの音声ファイルを読み込み、テキストに変換
+    """
+    l = []
+    for file in file_list:
+        print(f'Transcribing{file}')
+        l.append(AssemblyAIAudioTranscriptLoader(file_path=file).load()[0])
+    return l
+# 音声ファイルのリストを取得
+file_list = ["7.m4a", "8.m4a"]
+# 音声ファイルをテキストに変換
+transcripts = get_audio_transcript(file_list)
+text_splitter = RecursiveCharacterTextSplitter(chunk_size=1000, chunk_overlap=0)
+
+# テキストをチャンクに分割
+aud_texts = text_splitter.split_documents(transcripts)
+
+# aud_textsをpdfとして出力
+# ...existing code...
+# aud_textsをpdfとして出力
+
+def save_aud_texts_to_pdf(aud_texts, output_path):
+    doc = fitz.open()
+    for chunk in aud_texts:
+        page = doc.new_page()
+        # chunkがDocument型の場合はpage_content属性を使う
+        text = chunk.page_content if hasattr(chunk, "page_content") else str(chunk)
+        page.insert_text((72, 72), text, fontsize=12)
+    doc.save(output_path)
+    doc.close()
+
+save_aud_texts_to_pdf(aud_texts, "audio_transcripts.pdf")
+# ...existing code...
+
 # pdfファイルを読み込み、検索可能なナレッジベースを作成する関数
-def create_knowledge_base(file_path1, file_path2):
+def create_knowledge_base(file_path1, file_path2, aud_texts):
     """
     テキストファイルを読み込み、検索可能なナレッジベースを作成
     """
@@ -24,6 +61,7 @@ def create_knowledge_base(file_path1, file_path2):
         raw_text = "\n".join(page.get_text() for page in doc1) # PDFのテキストを取得
     with fitz.open(file_path2) as doc2:
         raw_text += "\n" + "\n".join(page.get_text() for page in doc2)
+    raw_text += "\n" + "\n".join([doc.page_content for doc in transcripts])
     # テキストをチャンクに分割
     # chunk_sizeはチャンクのサイズ、chunk_overlapはオーバーラップする文字数
     texts = CharacterTextSplitter(
@@ -38,7 +76,7 @@ def create_knowledge_base(file_path1, file_path2):
     # FAISSは、ベクトルストアの一種で、ベクトル検索を行うためのライブラリ
     return FAISS.from_documents(docs, HuggingFaceEmbeddings(model_name="all-mpnet-base-v2"))
 
-knowledge_base = create_knowledge_base("p1a1.pdf", "p1a2.pdf")
+knowledge_base = create_knowledge_base("7.pdf", "8.pdf", transcripts)
 
 # 初期メッセージ
 system_message = SystemMessage(content="あなたは授業アシスタントです。\n\

@@ -6,10 +6,12 @@ from langchain.document_loaders import AssemblyAIAudioTranscriptLoader
 from langchain_core.messages import SystemMessage, HumanMessage, AIMessage
 from langchain.text_splitter import CharacterTextSplitter
 from langchain.text_splitter import RecursiveCharacterTextSplitter
+import whisper
 from langchain.docstore.document import Document
 from langchain_community.vectorstores import FAISS
 from langchain_community.embeddings import HuggingFaceEmbeddings
 import fitz
+from fpdf import FPDF
 
 
 # 同一フォルダにある.envファイルを読み込む
@@ -17,19 +19,62 @@ load_dotenv()
 # モデルはGemini-1.5-flashを指定
 llm = ChatGoogleGenerativeAI(model='gemini-1.5-flash')
 
-def get_audio_transcript(file_list):
+#def get_audio_transcript(file_list):
+    #"""
+    #AssemblyAIの音声ファイルを読み込み、テキストに変換
+    #"""
+    #l = []
+    #for file in file_list:
+        #print(f'Transcribing{file}')
+        #l.append(AssemblyAIAudioTranscriptLoader(file_path=file).load()[0])
+    #return l
+
+def get_audio_gpt_transcript(file_list):
     """
-    AssemblyAIの音声ファイルを読み込み、テキストに変換
+    音声ファイルを読み込み、テキストに変換
     """
-    l = []
+    model = whisper.load_model("base")
     for file in file_list:
-        print(f'Transcribing{file}')
-        l.append(AssemblyAIAudioTranscriptLoader(file_path=file).load()[0])
-    return l
+        print(f'Transcribing {file}')
+        result = model.transcribe(file, language="ja")
+        yield Document(page_content=result["text"])
+    return "Transcription completed."
+
+         
 # 音声ファイルのリストを取得
 file_list = ["7.m4a", "8.m4a"]
+
+class PDF(FPDF):
+    def header(self):
+        self.set_font("Arial", "B", 12)
+        self.cell(0, 10, "Transcription", ln=True, align="C")
+        self.ln(10)
+
+    def footer(self):
+        self.set_y(-15)
+        self.set_font("Arial", "I", 8)
+        self.cell(0, 10, f"Page {self.page_no()}", align="C")
+
+# PDFに書き込み
+pdf = PDF()
+pdf.add_page()
+pdf.set_auto_page_break(auto=True, margin=15)
+pdf.set_font("Arial", size=12)
+
+transcripts = list(get_audio_gpt_transcript(["7.m4a", "8.m4a"]))
+
+# transcripts は Document オブジェクトのリスト
+for doc in transcripts:
+    i = 0
+    pdf.multi_cell(0, 10, f"[{i+1}] {doc.metadata.get('source', 'N/A')}\n{doc.page_content}\n")
+    pdf.ln(5)
+    i += 1
+
+# 保存
+pdf.output("transcripts.pdf")
+
 # 音声ファイルをテキストに変換
-transcripts = get_audio_transcript(file_list)
+#transcripts = get_audio_gpt_transcript(file_list)
 text_splitter = RecursiveCharacterTextSplitter(chunk_size=1000, chunk_overlap=0)
 
 # テキストをチャンクに分割

@@ -41,7 +41,12 @@ def create_knowledge_base(file_path1, file_path2):
 knowledge_base = create_knowledge_base("p1a1.pdf", "p1a2.pdf")
 
 # 初期メッセージ
-system_message = SystemMessage(content="あなたは秋田弁のアシスタントです。")
+system_message = SystemMessage(content="あなたは授業アシスタントです。\n\
+                                        授業の内容に関する質問に答えることができます。\n\
+                                        質問に答えるために、以下の情報を参考にしてください。\n\
+                                        参考情報は、授業の内容に関する情報です。\n\
+                                        質問に対する答えは、参考情報をもとに生成してください。\n\
+                                        もし、参考情報に答えがない場合は、追加資料には該当情報がないことを明確に伝えてから回答してください。\n")
 
 # 会話履歴を格納するリスト
 # のちにボタンを押したとき、会話履歴がリセットされるのを防ぐために、

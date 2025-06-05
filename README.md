@@ -14,6 +14,8 @@ pip install faiss-cpu
 
 pip install assemblyai
 
+pip install openai-whisper
+
 そのほか必要なものがあったら随時インストール
 
 streamlit run rag.py

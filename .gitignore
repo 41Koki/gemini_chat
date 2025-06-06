@@ -3,3 +3,7 @@
 8.m4a
 7.pdf
 8.pdf
+# Ignore all .m4a files
+# Ignore all .pdf files
+*.m4a
+*.pdf

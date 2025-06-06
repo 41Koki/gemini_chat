@@ -1,28 +1,27 @@
 import whisper
 from fpdf import FPDF
+from docx import Document as WordDocument
+from docx.shared import Pt
 from dotenv import load_dotenv
 from langchain.docstore.document import Document
 
 import os
 os.environ["PATH"] += os.pathsep + r"C:\Program Files\ffmpeg-7.1.1-essentials_build\bin"
-""
 
 
 
-def get_audio_gpt_transcript(file_list):
+def get_audio_gpt_transcript(file):
     """
     音声ファイルを読み込み、テキストに変換
     """
     model = whisper.load_model("base")
-    for file in file_list:
-        print(f'Transcribing {file}')
-        result = model.transcribe(file, language="ja")
-        yield Document(page_content=result["text"])
-    return "Transcription completed."
+    print(f'Transcribing {file}')
+    result = model.transcribe(file, language="ja")
+    return Document(page_content=result["text"])
 
          
 # 音声ファイルのリストを取得
-file_list = ["7.m4a", "8.m4a"]
+file_list = ["14.m4a", "16.m4a"]
 
 class PDF(FPDF):
     def header(self):
@@ -36,20 +35,32 @@ class PDF(FPDF):
         self.cell(0, 10, f"Page {self.page_no()}", align="C")
 
 # PDFに書き込み
-pdf = PDF()
-pdf.add_font('MSGothic', '', r"C:\phont\static\NotoSansJP-Regular.ttf", uni=True)
-pdf.add_page()
-pdf.set_auto_page_break(auto=True, margin=15)
-pdf.set_font('MSGothic', size=12)
+#pdf = PDF()
+#pdf.add_font('MSGothic', '', r"C:\phont\static\NotoSansJP-Regular.ttf", uni=True)
+#pdf.add_page()
+#pdf.set_auto_page_break(auto=True, margin=15)
+#pdf.set_font('MSGothic', size=12)
 
-transcripts = list(get_audio_gpt_transcript(["7.m4a", "8.m4a"]))
+for file in file_list:
+    transcripts = get_audio_gpt_transcript(file)
+    print("get_trans")
+    word_doc = WordDocument()
+    word_doc.add_heading('Transcription', level=1)
+
+    for i, doc in enumerate(transcripts):
+        word_doc.add_paragraph(f"[1]", style='Heading 2')
+        pera = word_doc.add_paragraph(doc.page_content)
+        pera.style.font.size = Pt(12)
+    filename = file.replace(".m4a", "")
+    word_doc.save(f"{filename}.docx")
+    print("get_docx")
 
 # transcripts は Document オブジェクトのリスト
-for doc in transcripts:
-    i = 0
-    pdf.multi_cell(0, 10, f"[{i+1}] {doc.metadata.get('source', 'N/A')}\n{doc.page_content}\n")
-    pdf.ln(5)
-    i += 1
+#for doc in transcripts:
+    #i = 0
+    #pdf.multi_cell(0, 10, f"[{i+1}] {doc.metadata.get('source', 'N/A')}\n{doc.page_content}\n")
+    #pdf.ln(5)
+    #i += 1
 
 # 保存
-pdf.output("transcripts.pdf")
+#pdf.output("transcripts.pdf")

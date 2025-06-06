@@ -42,15 +42,15 @@ class PDF(FPDF):
 #pdf.set_font('MSGothic', size=12)
 
 for file in file_list:
-    transcripts = get_audio_gpt_transcript(file)
+    doc = get_audio_gpt_transcript(file)
     print("get_trans")
     word_doc = WordDocument()
     word_doc.add_heading('Transcription', level=1)
 
-    for i, doc in enumerate(transcripts):
-        word_doc.add_paragraph(f"[1]", style='Heading 2')
-        pera = word_doc.add_paragraph(doc.page_content)
-        pera.style.font.size = Pt(12)
+    word_doc.add_paragraph("[1]", style='Heading 2')
+    para = word_doc.add_paragraph(doc.page_content)
+    para.style.font.size = Pt(12)
+
     filename = file.replace(".m4a", "")
     word_doc.save(f"{filename}.docx")
     print("get_docx")

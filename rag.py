@@ -63,7 +63,7 @@ def create_document_base(file_path1, file_path2):
     ).split_text(raw_text1)
     text_docx = CharacterTextSplitter(
         separator="\n",
-        chunk_size=10,
+        chunk_size=50,
         chunk_overlap=0
     ).split_text(raw_text2)
     print("split_text")

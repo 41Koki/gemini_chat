@@ -19,109 +19,58 @@ load_dotenv()
 # モデルはGemini-1.5-flashを指定
 llm = ChatGoogleGenerativeAI(model='gemini-1.5-flash')
 
-#def get_audio_transcript(file_list):
-    #"""
-    #AssemblyAIの音声ファイルを読み込み、テキストに変換
-    #"""
-    #l = []
-    #for file in file_list:
-        #print(f'Transcribing{file}')
-        #l.append(AssemblyAIAudioTranscriptLoader(file_path=file).load()[0])
-    #return l
-
-def get_audio_gpt_transcript(file_list):
+def get_lecture_title(file_path):
     """
-    音声ファイルを読み込み、テキストに変換
+    PDFファイルから授業のタイトルを取得する関数
     """
-    model = whisper.load_model("base")
-    for file in file_list:
-        print(f'Transcribing {file}')
-        result = model.transcribe(file, language="ja")
-        yield Document(page_content=result["text"])
-    return "Transcription completed."
-
-         
-# 音声ファイルのリストを取得
-file_list = ["7.m4a", "8.m4a"]
-
-class PDF(FPDF):
-    def header(self):
-        self.set_font("Arial", "B", 12)
-        self.cell(0, 10, "Transcription", ln=True, align="C")
-        self.ln(10)
-
-    def footer(self):
-        self.set_y(-15)
-        self.set_font("Arial", "I", 8)
-        self.cell(0, 10, f"Page {self.page_no()}", align="C")
-
-# PDFに書き込み
-pdf = PDF()
-pdf.add_page()
-pdf.set_auto_page_break(auto=True, margin=15)
-pdf.set_font("Arial", size=12)
-
-transcripts = list(get_audio_gpt_transcript(["7.m4a", "8.m4a"]))
-
-# transcripts は Document オブジェクトのリスト
-for doc in transcripts:
-    i = 0
-    pdf.multi_cell(0, 10, f"[{i+1}] {doc.metadata.get('source', 'N/A')}\n{doc.page_content}\n")
-    pdf.ln(5)
-    i += 1
-
-# 保存
-pdf.output("transcripts.pdf")
-
-# 音声ファイルをテキストに変換
-#transcripts = get_audio_gpt_transcript(file_list)
-text_splitter = RecursiveCharacterTextSplitter(chunk_size=1000, chunk_overlap=0)
-
-# テキストをチャンクに分割
-aud_texts = text_splitter.split_documents(transcripts)
-
-# aud_textsをpdfとして出力
-# ...existing code...
-# aud_textsをpdfとして出力
-
-def save_aud_texts_to_pdf(aud_texts, output_path):
-    doc = fitz.open()
-    for chunk in aud_texts:
-        page = doc.new_page()
-        # chunkがDocument型の場合はpage_content属性を使う
-        text = chunk.page_content if hasattr(chunk, "page_content") else str(chunk)
-        page.insert_text((72, 72), text, fontsize=12)
-    doc.save(output_path)
-    doc.close()
-
-save_aud_texts_to_pdf(aud_texts, "audio_transcripts.pdf")
-# ...existing code...
+    n = file_path.replace(".pdf", "")
+    # もしnにaudが含まれていれば、授業のタイトルを取得しない
+    if "aud" in n:
+        return f"第{n}回講義録音"
+    else:
+        return f"第{n}回講義資料"
 
 # pdfファイルを読み込み、検索可能なナレッジベースを作成する関数
-def create_knowledge_base(file_path1, file_path2, aud_texts):
+def create_knowledge_base(file_path1, file_path2, file_path3):
     """
     テキストファイルを読み込み、検索可能なナレッジベースを作成
     """
-    with fitz.open(file_path1) as doc1:
-        raw_text = "\n".join(page.get_text() for page in doc1) # PDFのテキストを取得
-    with fitz.open(file_path2) as doc2:
-        raw_text += "\n" + "\n".join(page.get_text() for page in doc2)
-    raw_text += "\n" + "\n".join([doc.page_content for doc in transcripts])
+    with fitz.open(file_path1) as doc7:
+        raw_text_7 = "\n".join(page.get_text() for page in doc7) # PDFのテキストを取得
+    with fitz.open(file_path2) as doc8:
+        raw_text_8 = "\n" + "\n".join(page.get_text() for page in doc8)
+    with fitz.open(file_path3) as doc1:
+        raw_text_1 = "\n" + "\n".join([page.get_text() for page in doc1])
     # テキストをチャンクに分割
     # chunk_sizeはチャンクのサイズ、chunk_overlapはオーバーラップする文字数
-    texts = CharacterTextSplitter(
+    text_7 = CharacterTextSplitter(
         separator="\n",
         chunk_size=100,
         chunk_overlap=20
-    ).split_text(raw_text)
+    ).split_text(raw_text_7)
+    text_8 = CharacterTextSplitter(
+        separator="\n",
+        chunk_size=100,
+        chunk_overlap=20
+    ).split_text(raw_text_8)
+    text_1 = CharacterTextSplitter(
+        separator="\n",
+        chunk_size=10,
+        chunk_overlap=0
+    ).split_text(raw_text_1)
+
     # テキストをDocumentオブジェクトに変換
     # Documentオブジェクトは、page_contentとmetadataを持つ
-    docs = [Document(page_content=t) for t in texts]
+    #metadataは、参考情報で、どのファイルから取得したかを示す
+    docs_7 = [Document(page_content=t, metadata = {"source" : get_lecture_title(file_path1)}) for t in text_7]
+    docs_8 = [Document(page_content=t, metadata = {"source" : get_lecture_title(file_path2)}) for t in text_8]
+    docs_1 = [Document(page_content=t, metadata = {"source" : get_lecture_title(file_path3)}) for t in text_1]
+    all_docs = docs_7 + docs_8 + docs_1
     # HuggingFaceEmbeddings でベクトル化
     # FAISSは、ベクトルストアの一種で、ベクトル検索を行うためのライブラリ
-    return FAISS.from_documents(docs, HuggingFaceEmbeddings(model_name="all-mpnet-base-v2"))
+    return FAISS.from_documents(all_docs, HuggingFaceEmbeddings(model_name="all-mpnet-base-v2"))
 
-knowledge_base = create_knowledge_base("7.pdf", "8.pdf", transcripts)
+knowledge_base = create_knowledge_base("7.pdf", "8.pdf", "transcripts.pdf")
 
 # 初期メッセージ
 system_message = SystemMessage(content="あなたは授業アシスタントです。\n\
@@ -160,7 +109,9 @@ if prompt:
     st.session_state.messages.append({"role": "user", "content": prompt})
     # ユーザーからの入力を受け取ったら、ナレッジベースから関連する情報を取得
     retriever = knowledge_base.as_retriever()
-    context_text = "\n\n".join([doc.page_content for doc in retriever.invoke(prompt)]) # ユーザーからの入力に関連する情報を取得
+    context_text = "\n\n".join([
+                                f"[{doc.metadata.get('source')}]\n{doc.page_content}" 
+                                for doc in retriever.invoke(prompt)]) # ユーザーからの入力に関連する情報を取得
 
     gen_prompt = f"質問: {prompt}\n\n以下は、参考情報です。\n\n{context_text}\n" 
     st.session_state.information = f"以下は、参考情報です。\n{context_text}"

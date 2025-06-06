@@ -23,6 +23,6 @@ pip install python-docx langchain
 
 そのほか必要なものがあったら随時インストール
 
-streamlit run rag.py
+streamlit run main.py
 
 最終的には、音声ファイルとpdfから質問に答えてくれるチャットボットを作成したい。なお、講義で述べられていない内容に関しては、述べられていないと宣言するようにしておく。

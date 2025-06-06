@@ -6,7 +6,8 @@ from langchain.document_loaders import AssemblyAIAudioTranscriptLoader
 from langchain_core.messages import SystemMessage, HumanMessage, AIMessage
 from langchain.text_splitter import CharacterTextSplitter
 from langchain.text_splitter import RecursiveCharacterTextSplitter
-import whisper
+from docx import Document as WordReader
+from langchain.docstore.document import Document
 from langchain.docstore.document import Document
 from langchain_community.vectorstores import FAISS
 from langchain_community.embeddings import HuggingFaceEmbeddings
@@ -23,7 +24,10 @@ def get_lecture_title(file_path):
     """
     PDFファイルから授業のタイトルを取得する関数
     """
-    n = file_path.replace(".pdf", "")
+    if file_path.endswith(".pdf"):
+        n = file_path.replace(".pdf", "")
+    elif file_path.endswith(".docx"):
+        n = file_path.replace(".docx", "")
     # もしnにaudが含まれていれば、授業のタイトルを取得しない
     if "aud" in n:
         return f"第{n}回講義録音"
@@ -31,55 +35,72 @@ def get_lecture_title(file_path):
         return f"第{n}回講義資料"
 
 # pdfファイルを読み込み、検索可能なナレッジベースを作成する関数
-def create_knowledge_base(file_path1, file_path2, file_path3):
+def create_document_base(file_path1, file_path2):
+    doc = WordReader(file_path2)
+
     """
     テキストファイルを読み込み、検索可能なナレッジベースを作成
     """
-    with fitz.open(file_path1) as doc7:
-        raw_text_7 = "\n".join(page.get_text() for page in doc7) # PDFのテキストを取得
-    with fitz.open(file_path2) as doc8:
-        raw_text_8 = "\n" + "\n".join(page.get_text() for page in doc8)
-    with fitz.open(file_path3) as doc1:
-        raw_text_1 = "\n" + "\n".join([page.get_text() for page in doc1])
+    with fitz.open(file_path1) as doc1:
+        raw_text1 = "\n".join(page.get_text() for page in doc1) # PDFのテキストを取得
+    
+    full_text = []
+    for para in doc.paragraphs:
+        raw_text_2 = para.text.strip()
+        if raw_text_2:  # 空でない段落のみを取得
+            full_text.append(raw_text_2)
+    raw_text2 = "\n".join(full_text)  # 全ての段落を結合
+
     # テキストをチャンクに分割
     # chunk_sizeはチャンクのサイズ、chunk_overlapはオーバーラップする文字数
-    text_7 = CharacterTextSplitter(
+    text_pdf = CharacterTextSplitter(
         separator="\n",
         chunk_size=100,
         chunk_overlap=20
-    ).split_text(raw_text_7)
-    text_8 = CharacterTextSplitter(
-        separator="\n",
-        chunk_size=100,
-        chunk_overlap=20
-    ).split_text(raw_text_8)
-    text_1 = CharacterTextSplitter(
+    ).split_text(raw_text1)
+    text_docx = CharacterTextSplitter(
         separator="\n",
         chunk_size=10,
         chunk_overlap=0
-    ).split_text(raw_text_1)
+    ).split_text(raw_text2)
 
     # テキストをDocumentオブジェクトに変換
     # Documentオブジェクトは、page_contentとmetadataを持つ
     #metadataは、参考情報で、どのファイルから取得したかを示す
-    docs_7 = [Document(page_content=t, metadata = {"source" : get_lecture_title(file_path1)}) for t in text_7]
-    docs_8 = [Document(page_content=t, metadata = {"source" : get_lecture_title(file_path2)}) for t in text_8]
-    docs_1 = [Document(page_content=t, metadata = {"source" : get_lecture_title(file_path3)}) for t in text_1]
-    all_docs = docs_7 + docs_8 + docs_1
+    docs_t = [Document(page_content=t, metadata = {"source" : get_lecture_title(file_path1)}) for t in text_pdf]
+    docs_d = [Document(page_content=t, metadata = {"source" : get_lecture_title(file_path2)}) for t in text_docx]
+    all_docs = docs_t + docs_d
+    return all_docs
     # HuggingFaceEmbeddings でベクトル化
     # FAISSは、ベクトルストアの一種で、ベクトル検索を行うためのライブラリ
-    return FAISS.from_documents(all_docs, HuggingFaceEmbeddings(model_name="all-mpnet-base-v2"))
 
-knowledge_base = create_knowledge_base("7.pdf", "8.pdf", "transcripts.pdf")
+document_base = []
+# 授業のクラス名のリスト
+class_list = ["14","16"]
+
+for cla in class_list:
+    # PDFファイルとWordファイルのパスを指定
+    pdf_file = f"{cla}.pdf"
+    docx_file = f"{cla}.docx"
+    #if not os.path.exists(pdf_file) or not os.path.exists(docx_file):
+        #st.error(f"{cla}のファイルが見つかりません。")
+        #continue
+    # ナレッジベースを作成
+    document_base += create_document_base(pdf_file, docx_file)
+
+knowledge_base = FAISS.from_documents(document_base, HuggingFaceEmbeddings(model_name="all-mpnet-base-v2"))
+
+
 
 # 初期メッセージ
 system_message = SystemMessage(content="あなたは授業アシスタントです。\n\
                                         授業の内容に関する質問に答えることができます。\n\
-                                        質問に答えるために、以下の情報を参考にしてください。\n\
-                                        参考情報は、授業の内容に関する情報です。\n\
                                         質問に対する答えは、参考情報をもとに生成してください。\n\
-                                        もし、参考情報に答えがない場合は、追加資料には該当情報がないことを明確に伝えてから回答してください。\n")
+                                        参考資料で、pdfとdocxで同じ数字がファイル名に含まれるものは、同じ内容について記載されています。\n\
+                                        もし、参考情報に関係する単語が全くない場合は、関係する単語が見つからなかったと回答してください。\n\
+                                        もし、少しだけ関連する単語がある場合は、関連する単語を使って回答してください。\n")
 
+                                        
 # 会話履歴を格納するリスト
 # のちにボタンを押したとき、会話履歴がリセットされるのを防ぐために、
 # session_stateにconversation_historyを格納

@@ -13,6 +13,7 @@ from langchain_community.vectorstores import FAISS
 from langchain_community.embeddings import HuggingFaceEmbeddings
 import fitz
 from fpdf import FPDF
+import time
 
 
 # 同一フォルダにある.envファイルを読み込む
@@ -36,20 +37,22 @@ def get_lecture_title(file_path):
 
 # pdfファイルを読み込み、検索可能なナレッジベースを作成する関数
 def create_document_base(file_path1, file_path2):
+    start = time.time()
     doc = WordReader(file_path2)
-
-    """
-    テキストファイルを読み込み、検索可能なナレッジベースを作成
-    """
     with fitz.open(file_path1) as doc1:
         raw_text1 = "\n".join(page.get_text() for page in doc1) # PDFのテキストを取得
-    
+    print("get_pdf_text")
+    pdf = time.time()
     full_text = []
     for para in doc.paragraphs:
         raw_text_2 = para.text.strip()
         if raw_text_2:  # 空でない段落のみを取得
             full_text.append(raw_text_2)
     raw_text2 = "\n".join(full_text)  # 全ての段落を結合
+    print("get_docx_text")
+    docx = time.time()
+    print(f"PDF読み込み時間: {pdf - start:.2f}秒")
+    print(f"Word読み込み時間: {docx - pdf:.2f}秒")
 
     # テキストをチャンクに分割
     # chunk_sizeはチャンクのサイズ、chunk_overlapはオーバーラップする文字数
@@ -63,6 +66,9 @@ def create_document_base(file_path1, file_path2):
         chunk_size=10,
         chunk_overlap=0
     ).split_text(raw_text2)
+    print("split_text")
+    chunk = time.time()
+    print(f"テキスト分割時間: {chunk - docx:.2f}秒")
 
     # テキストをDocumentオブジェクトに変換
     # Documentオブジェクトは、page_contentとmetadataを持つ
@@ -70,6 +76,9 @@ def create_document_base(file_path1, file_path2):
     docs_t = [Document(page_content=t, metadata = {"source" : get_lecture_title(file_path1)}) for t in text_pdf]
     docs_d = [Document(page_content=t, metadata = {"source" : get_lecture_title(file_path2)}) for t in text_docx]
     all_docs = docs_t + docs_d
+    print("get_document")
+    end = time.time()
+    print(f"ドキュメント作成時間: {end - chunk:.2f}秒")
     return all_docs
     # HuggingFaceEmbeddings でベクトル化
     # FAISSは、ベクトルストアの一種で、ベクトル検索を行うためのライブラリ
@@ -88,7 +97,11 @@ for cla in class_list:
     # ナレッジベースを作成
     document_base += create_document_base(pdf_file, docx_file)
 
+know_st = time.time()
 knowledge_base = FAISS.from_documents(document_base, HuggingFaceEmbeddings(model_name="all-mpnet-base-v2"))
+print("get_knowledge_base")
+know_end = time.time()
+print(f"ナレッジベース作成時間: {know_end - know_st:.2f}秒")
 
 
 
@@ -127,14 +140,24 @@ for message in st.session_state.messages:
 prompt = st.chat_input("お困りのことがあれば教えてください。")
 
 if prompt:
+    pro_st = time.time()
     st.session_state.messages.append({"role": "user", "content": prompt})
     # ユーザーからの入力を受け取ったら、ナレッジベースから関連する情報を取得
     retriever = knowledge_base.as_retriever()
+    retriever.search_type = "similarity" # 類似度検索を使用
+    retriever.search_kwargs = {"k": 3} # 上位3件の情報を取得
+    print("get_retriever")
+    retriever_st = time.time()
+    print(f"リトリーバー取得時間: {retriever_st - pro_st:.2f}秒")
     context_text = "\n\n".join([
                                 f"[{doc.metadata.get('source')}]\n{doc.page_content}" 
                                 for doc in retriever.invoke(prompt)]) # ユーザーからの入力に関連する情報を取得
-
+    print("get_context_text")
+    context_st = time.time()
+    print(f"コンテキスト取得時間: {context_st - retriever_st:.2f}秒")
     gen_prompt = f"質問: {prompt}\n\n以下は、参考情報です。\n\n{context_text}\n" 
+    context_end = time.time()
+    print(f"プロンプト生成時間: {context_end - context_st:.2f}秒")
     st.session_state.information = f"以下は、参考情報です。\n{context_text}"
     conversation_history.append(HumanMessage(content=gen_prompt)) # 会話履歴にユーザーからの入力と参考情報を追加
 
@@ -142,7 +165,10 @@ if prompt:
     with st.chat_message("user"):
         st.markdown(prompt) # ユーザーからの入力を表示
     with st.chat_message("assistant"):
+        response_st = time.time()
         response = llm.invoke(conversation_history) # モデルに会話履歴を渡して応答を生成
+        response_end = time.time()
+        print(f"応答生成時間: {response_end - response_st:.2f}秒")
         # 会話履歴にAIの応答を追加
         conversation_history.append(AIMessage(content=response.content))
         st.markdown(response.content) # AIの応答を表示

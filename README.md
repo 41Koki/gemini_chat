@@ -15,7 +15,11 @@ pip install faiss-cpu
 pip install assemblyai
 
 pip install openai-whisper
+
 pip install python-docx
+
+pip install python-docx langchain
+
 
 そのほか必要なものがあったら随時インストール
 

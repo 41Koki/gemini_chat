@@ -21,7 +21,7 @@ def get_audio_gpt_transcript(file):
 
          
 # 音声ファイルのリストを取得
-file_list = ["14.m4a", "16.m4a"]
+file_list = ["14_aud.m4a", "16_aud.m4a"]
 
 class PDF(FPDF):
     def header(self):

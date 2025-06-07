@@ -20,6 +20,8 @@ pip install python-docx
 
 pip install python-docx langchain
 
+pip install sentence_transformers
+
 
 そのほか必要なものがあったら随時インストール
 

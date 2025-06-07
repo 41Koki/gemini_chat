@@ -2,7 +2,6 @@ import whisper
 from fpdf import FPDF
 from docx import Document as WordDocument
 from docx.shared import Pt
-from dotenv import load_dotenv
 from langchain.docstore.document import Document
 
 import os

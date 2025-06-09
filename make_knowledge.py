@@ -5,6 +5,15 @@ from langchain.text_splitter import CharacterTextSplitter
 from langchain.docstore.document import Document
 from langchain_community.vectorstores import FAISS
 from langchain_community.embeddings import HuggingFaceEmbeddings
+from huggingface_hub import snapshot_download
+
+model_name = "intfloat/multilingual-e5-base"
+
+download_path = snapshot_download(
+    repo_id=model_name,
+    local_dir=f"C:/Work/gemini_AI/path_to_model/{model_name}",
+    local_dir_use_symlinks=False
+    )
 
 
 def get_lecture_title(file_path):
@@ -84,7 +93,8 @@ for cla in class_list:
     document_base += create_document_base(pdf_file, docx_file)
 
 know_st = time.time()
-knowledge_base = FAISS.from_documents(document_base, HuggingFaceEmbeddings(model_name="sentence-transformers/paraphrase-MiniLM-L6-v2"))
+#knowledge_base = FAISS.from_documents(document_base, HuggingFaceEmbeddings(model_name="sentence-transformers/paraphrase-MiniLM-L6-v2"))
+knowledge_base = FAISS.from_documents(document_base, HuggingFaceEmbeddings(model_name=download_path))
 knowledge_base.save_local("faiss_index/")
 print("get_knowledge_base")
 know_end = time.time()

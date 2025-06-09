@@ -7,3 +7,4 @@
 # Ignore all .pdf files
 *.m4a
 *.pdf
+path_to_model/*

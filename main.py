@@ -26,12 +26,27 @@ def get_lecture_title(file_path):
     else:
         return f"第{n}回講義資料"
 
-open_know_st = time.time()
-knowledge_base = FAISS.load_local("faiss_index/",
-                                   HuggingFaceEmbeddings(model_name="sentence-transformers/paraphrase-MiniLM-L6-v2"),
-                                   allow_dangerous_deserialization=True)
-open_know_end = time.time()
-print(f"ナレッジベース読み込み時間: {open_know_end - open_know_st:.2f}秒")
+model_path = "C:/Work/gemini_AI/path_to_modelpath_to_model/intfloat/multilingual-e5-base"
+
+if "knowledge_base" not in st.session_state:
+    open_know_st = time.time()
+    embeddings = HuggingFaceEmbeddings(model_name=model_path)
+    st.session_state.knowledge_base = FAISS.load_local(
+        "faiss_index/",
+        embeddings,
+        allow_dangerous_deserialization=True
+    )
+    
+    retriever = st.session_state.knowledge_base.as_retriever()
+    retriever.search_type = "similarity"
+    retriever.search_kwargs = {"k": 3}
+    st.session_state.retriever = retriever
+    open_know_end = time.time()
+    print(f"ナレッジベース読み込み時間: {open_know_end - open_know_st:.2f}秒")
+else:
+    print("セッションキャッシュからナレッジベースとリトリーバーを取得")
+
+retriever = st.session_state.retriever
 
 # 初期メッセージ
 system_message = SystemMessage(content="あなたは授業アシスタントです。\n\
@@ -71,12 +86,8 @@ if prompt:
     pro_st = time.time()
     st.session_state.messages.append({"role": "user", "content": prompt})
     # ユーザーからの入力を受け取ったら、ナレッジベースから関連する情報を取得
-    retriever = knowledge_base.as_retriever()
-    retriever.search_type = "similarity" # 類似度検索を使用
-    retriever.search_kwargs = {"k": 3} # 上位3件の情報を取得
     print("get_retriever")
     retriever_st = time.time()
-    print(f"リトリーバー取得時間: {retriever_st - pro_st:.2f}秒")
     context_text = "\n\n".join([
                                 f"[{doc.metadata.get('source')}]\n{doc.page_content}" 
                                 for doc in retriever.invoke(prompt)]) # ユーザーからの入力に関連する情報を取得

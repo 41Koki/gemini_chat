@@ -22,6 +22,14 @@ pip install python-docx langchain
 
 pip install sentence_transformers
 
+pip install --upgrade pip
+
+pip install --upgrade transformers accelerate
+
+pip install git+https://github.com/openai/whisper.git
+
+pip install soundfile numpy
+
 
 そのほか必要なものがあったら随時インストール
 

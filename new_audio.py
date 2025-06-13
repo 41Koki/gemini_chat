@@ -35,10 +35,10 @@ def get_string(chunk):
     # 推論の実行
     generated_ids = model.generate(input_features)
     transcription = processor.batch_decode(generated_ids, skip_special_tokens=True)
-    print(transcription)
+    #print(transcription)
     return transcription
 
-file_list = ["16_aud_16k.wav"]
+file_list = ["14_aud.wav", "16_aud.wav"]
 
 for file in file_list:
     audio_input, _ = librosa.load(file, sr=16000)

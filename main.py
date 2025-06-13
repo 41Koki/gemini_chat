@@ -19,7 +19,7 @@ def get_lecture_title(file_path):
     if file_path.endswith(".pdf"):
         n = file_path.replace(".pdf", "")
     elif file_path.endswith(".docx"):
-        n = file_path.replace(".docx", "")
+        n = file_path.replace("_aud.docx", "")
     # もしnにaudが含まれていれば、授業のタイトルを取得しない
     if "aud" in n:
         return f"第{n}回講義録音"
@@ -69,7 +69,7 @@ if "conversation_history" not in st.session_state:
 conversation_history = st.session_state.conversation_history
 
 # StreamlitのUIを作成
-st.title("langchain-streamlit-app")
+st.title("知能情報システム-QAChatBot")
 
 if "messages" not in st.session_state:
     st.session_state.messages = []

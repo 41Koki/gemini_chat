@@ -5,6 +5,8 @@
 8.pdf
 # Ignore all .m4a files
 # Ignore all .pdf files
+16_aud_16k.wav
 *.m4a
 *.pdf
+*.wav
 path_to_model/*

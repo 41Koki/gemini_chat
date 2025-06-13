@@ -36,6 +36,8 @@ if "knowledge_base" not in st.session_state:
         embeddings,
         allow_dangerous_deserialization=True
     )
+
+# ここのembeddingモデルと、makeknowledgeのモデルが一致してないとエラーになるから注意
     
     retriever = st.session_state.knowledge_base.as_retriever()
     retriever.search_type = "similarity"

@@ -30,6 +30,8 @@ pip install git+https://github.com/openai/whisper.git
 
 pip install soundfile numpy
 
+pip install librosa
+
 
 そのほか必要なものがあったら随時インストール
 

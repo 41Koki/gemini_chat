@@ -26,7 +26,7 @@ def get_lecture_title(file_path):
     else:
         return f"第{n}回講義資料"
 
-model_path = "intfloat/multilingual-e5-base"
+model_path = "C:/Work/gemini_AI/path_to_model/intfloat/multilingual-e5-base"
 
 if "knowledge_base" not in st.session_state:
     open_know_st = time.time()

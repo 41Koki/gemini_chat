@@ -6,6 +6,7 @@ from langchain.docstore.document import Document
 from langchain_community.vectorstores import FAISS
 from langchain_community.embeddings import HuggingFaceEmbeddings
 from huggingface_hub import snapshot_download
+import os
 
 model_name = "intfloat/multilingual-e5-base"
 
@@ -33,23 +34,33 @@ def get_lecture_title(file_path):
 
 # pdfファイルを読み込み、検索可能なナレッジベースを作成する関数
 def create_document_base(file_path1, file_path2):
-    start = time.time()
-    doc = WordReader(file_path2)
-    with fitz.open(file_path1) as doc1:
-        raw_text1 = "\n".join(page.get_text() for page in doc1) # PDFのテキストを取得
-    print("get_pdf_text")
-    pdf = time.time()
-    full_text = []
-    for para in doc.paragraphs:
-        raw_text_2 = para.text.strip()
-        if raw_text_2:  # 空でない段落のみを取得
-            full_text.append(raw_text_2)
-    raw_text2 = "\n".join(full_text)  # 全ての段落を結合
-    #print(raw_text2)
-    print("get_docx_text")
-    docx = time.time()
-    print(f"PDF読み込み時間: {pdf - start:.2f}秒")
-    print(f"Word読み込み時間: {docx - pdf:.2f}秒")
+    if file_path2 is None:
+        print("audio data is None")
+        raw_text2 = ""
+    else:
+        start = time.time()
+        doc = WordReader(file_path2)
+        full_text = []
+        for para in doc.paragraphs:
+            raw_text_2 = para.text.strip()
+            if raw_text_2:  # 空でない段落のみを取得
+                full_text.append(raw_text_2)
+        raw_text2 = "\n".join(full_text)  # 全ての段落を結合
+        docx = time.time()
+        print("get_docx_text")
+    
+    if file_path1 is None:
+        print("pdf data is None")
+        raw_text1 = ""
+    else:
+        start_pdf = time.time()
+        with fitz.open(file_path1) as doc1:
+            raw_text1 = "\n".join(page.get_text() for page in doc1) # PDFのテキストを取得
+        print("get_pdf_text")
+        pdf = time.time()
+        
+    print(f"PDF読み込み時間: {pdf - start_pdf:.2f}秒")
+    print(f"Word読み込み時間: {docx - start:.2f}秒")
 
     # テキストをチャンクに分割
     # chunk_sizeはチャンクのサイズ、chunk_overlapはオーバーラップする文字数
@@ -87,8 +98,14 @@ class_list = ["14","16"]
 
 for cla in class_list:
     # PDFファイルとWordファイルのパスを指定
-    pdf_file = f"{cla}.pdf"
-    docx_file = f"{cla}_aud.docx"
+    if not os.path.exists(f"{cla}.pdf"):
+        pdf_file = None
+    else:
+        pdf_file = f"{cla}.pdf"
+    if not os.path.exists(f"{cla}_aud.docx"):
+        docx_file = None
+    else:
+        docx_file = f"{cla}_aud.docx"
     #if not os.path.exists(pdf_file) or not os.path.exists(docx_file):
         #st.error(f"{cla}のファイルが見つかりません。")
         #continue

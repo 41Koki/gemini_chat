@@ -26,23 +26,16 @@ def get_lecture_title(file_path):
     else:
         return f"第{n}回講義資料"
 
-model_path = "intfloat/multilingual-e5-base"
+@st.cache_resource
+def load_embeddings_and_index():
+    embeddings = HuggingFaceEmbeddings(model_name="intfloat/multilingual-e5-base")
+    index = FAISS.load_local("faiss_index/", embeddings, allow_dangerous_deserialization=True)
+    return index.as_retriever(search_type="similarity", search_kwargs={"k": 10})
+
 
 if "knowledge_base" not in st.session_state:
     open_know_st = time.time()
-    embeddings = HuggingFaceEmbeddings(model_name=model_path)
-    st.session_state.knowledge_base = FAISS.load_local(
-        "faiss_index/",
-        embeddings,
-        allow_dangerous_deserialization=True
-    )
-
-# ここのembeddingモデルと、makeknowledgeのモデルが一致してないとエラーになるから注意
-    
-    retriever = st.session_state.knowledge_base.as_retriever()
-    retriever.search_type = "similarity"
-    retriever.search_kwargs = {"k": 3}
-    st.session_state.retriever = retriever
+    retriever = load_embeddings_and_index()
     open_know_end = time.time()
     print(f"ナレッジベース読み込み時間: {open_know_end - open_know_st:.2f}秒")
 else:
@@ -120,3 +113,8 @@ if prompt:
 if st.button("参考情報を表示"):
     if "information" in st.session_state:
         st.markdown(st.session_state.information)
+
+if st.button("🔄 キャッシュをクリアする"):
+    st.cache_resource.clear()
+    st.experimental_rerun()
+

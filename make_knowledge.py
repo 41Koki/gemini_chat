@@ -46,8 +46,9 @@ def create_document_base(file_path1, file_path2):
             if raw_text_2:  # 空でない段落のみを取得
                 full_text.append(raw_text_2)
         raw_text2 = "\n".join(full_text)  # 全ての段落を結合
-        docx = time.time()
+        docx_time = time.time()
         print("get_docx_text")
+        print(f"word読み込み時間: {start - docx_time:.2f}秒")
     
     if file_path1 is None:
         print("pdf data is None")
@@ -58,12 +59,11 @@ def create_document_base(file_path1, file_path2):
             raw_text1 = "\n".join(page.get_text() for page in doc1) # PDFのテキストを取得
         print("get_pdf_text")
         pdf = time.time()
-
-    print(f"PDF読み込み時間: {pdf - start_pdf:.2f}秒")
-    print(f"Word読み込み時間: {docx - start:.2f}秒")
+        print(f"PDF読み込み時間: {pdf - start_pdf:.2f}秒")
 
     # テキストをチャンクに分割
     # chunk_sizeはチャンクのサイズ、chunk_overlapはオーバーラップする文字数
+    str_chunk = time.time()
     text_pdf = CharacterTextSplitter(
         separator="\n",
         chunk_size=100,
@@ -77,7 +77,7 @@ def create_document_base(file_path1, file_path2):
     print("split_text")
     #print(text_docx)
     chunk = time.time()
-    print(f"テキスト分割時間: {chunk - docx:.2f}秒")
+    print(f"テキスト分割時間: {chunk - str_chunk:.2f}秒")
 
     # テキストをDocumentオブジェクトに変換
     # Documentオブジェクトは、page_contentとmetadataを持つ

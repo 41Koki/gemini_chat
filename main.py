@@ -110,7 +110,7 @@ if st.button("参考情報を表示"):
     if "information" in st.session_state:
         st.markdown(st.session_state.information)
 
-if st.button("🔄 キャッシュをクリアする"):
+if st.button("キャッシュをクリア"):
     st.cache_resource.clear()
     st.experimental_rerun()
 

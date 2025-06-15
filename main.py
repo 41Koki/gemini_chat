@@ -33,15 +33,11 @@ def load_embeddings_and_index():
     return index.as_retriever(search_type="similarity", search_kwargs={"k": 10})
 
 
-if "knowledge_base" not in st.session_state:
-    open_know_st = time.time()
-    retriever = load_embeddings_and_index()
-    open_know_end = time.time()
-    print(f"ナレッジベース読み込み時間: {open_know_end - open_know_st:.2f}秒")
-else:
-    print("セッションキャッシュからナレッジベースとリトリーバーを取得")
 
-retriever = st.session_state.retriever
+open_know_st = time.time()
+retriever = load_embeddings_and_index()
+open_know_end = time.time()
+
 
 # 初期メッセージ
 system_message = SystemMessage(content="あなたは授業アシスタントです。\n\
@@ -92,7 +88,7 @@ if prompt:
     gen_prompt = f"質問: {prompt}\n\n以下は、参考情報です。\n\n{context_text}\n" 
     context_end = time.time()
     print(f"プロンプト生成時間: {context_end - context_st:.2f}秒")
-    st.session_state.information = f"以下は、参考情報です。\n{context_text}"
+    st.session_state.information = f"以下は、参考情報です。\n\n{context_text}"
     conversation_history.append(HumanMessage(content=gen_prompt)) # 会話履歴にユーザーからの入力と参考情報を追加
 
 

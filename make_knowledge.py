@@ -58,7 +58,7 @@ def create_document_base(file_path1, file_path2):
             raw_text1 = "\n".join(page.get_text() for page in doc1) # PDFのテキストを取得
         print("get_pdf_text")
         pdf = time.time()
-        
+
     print(f"PDF読み込み時間: {pdf - start_pdf:.2f}秒")
     print(f"Word読み込み時間: {docx - start:.2f}秒")
 
@@ -94,7 +94,7 @@ def create_document_base(file_path1, file_path2):
 
 document_base = []
 # 授業のクラス名のリスト
-class_list = ["14","16"]
+class_list = ["1","1_1","2","3","3_1","4","4_1", "5", "6", "7", "8", "9"]
 
 for cla in class_list:
     # PDFファイルとWordファイルのパスを指定

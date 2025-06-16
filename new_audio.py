@@ -55,9 +55,11 @@ def get_string(chunk):
     return transcription
 
 file_list = ["7_aud.m4a"]
+file_path = "aud/"
 
 for file in file_list:
-    filename = file.replace(".wav", "")
+    file = file_path + file
+    filename = file.replace(".m4a", "")
     convert_m4a_to_wav(file,f"{filename}.wav")
     audio_input, _ = librosa.load(file, sr=16000)
     chunk_list = split_aud(audio_input)
@@ -72,6 +74,7 @@ for file in file_list:
         para = word_doc.add_paragraph(doc[0])
         para.style.font.size = Pt(12)
         i += 1
-    word_doc.save(f"{filename}.docx")
+    filename = filename.replace("aud/", "")
+    word_doc.save(f"docx/{filename}.docx")
     print("get_docx")
 

@@ -23,8 +23,10 @@ def get_lecture_title(file_path):
     """
     if file_path.endswith(".pdf"):
         n = file_path.replace(".pdf", "")
+        n = n.replace("pdf/", "")
     elif file_path.endswith(".docx"):
         n = file_path.replace(".docx", "")
+        n = n.replace("docx/", "")
     # もしnにaudが含まれていれば、授業のタイトルを取得しない
     if "aud" in n:
         n = n.replace("_aud", "")
@@ -95,17 +97,20 @@ def create_document_base(file_path1, file_path2):
 document_base = []
 # 授業のクラス名のリスト
 class_list = ["1","1_1","2","3","3_1","4","4_1", "5", "6", "7", "8", "9"]
+docx_path = "docx/"
+pdf_path = "pdf/"
 
 for cla in class_list:
     # PDFファイルとWordファイルのパスを指定
-    if not os.path.exists(f"{cla}.pdf"):
+    if not os.path.exists(pdf_path + f"{cla}.pdf"):
         pdf_file = None
     else:
-        pdf_file = f"{cla}.pdf"
-    if not os.path.exists(f"{cla}_aud.docx"):
+        pdf_file = pdf_path + f"{cla}.pdf"
+        
+    if not os.path.exists(docx_path + f"{cla}_aud.docx"):
         docx_file = None
     else:
-        docx_file = f"{cla}_aud.docx"
+        docx_file = docx_path + f"{cla}_aud.docx"
     #if not os.path.exists(pdf_file) or not os.path.exists(docx_file):
         #st.error(f"{cla}のファイルが見つかりません。")
         #continue

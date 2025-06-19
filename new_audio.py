@@ -18,13 +18,6 @@ model = WhisperForConditionalGeneration.from_pretrained(model_id).to(device)
 model.config.attn_implementation = "flash_attention_2"
 
 def convert_m4a_to_wav(input_path, output_path):
-  """
-  M4AファイルをWAVファイルに変換する関数
-
-  Args:
-    input_path: 変換するM4Aファイルのパス
-    output_path: 出力WAVファイルのパス
-  """
   try:
     y, sr = librosa.load(input_path, sr=None)
     sf.write(output_path, y, sr)
@@ -39,20 +32,23 @@ def split_aud(fi, sr = 16000, chunk_sec=30):
 
 
 def get_string(chunk):
+    input_features = processor(chunk, sampling_rate=16000, return_tensors="pt").input_features.to(device)
+    # 推論の実行
+    generated_ids = model.generate(input_features)
+    transcription = processor.batch_decode(generated_ids, skip_special_tokens=True)
+    return transcription
 
-    # 音声の読み込みとリサンプリング
+# 音声の読み込みとリサンプリング
     #audio_input, _ = librosa.load(aud_file, sr=16000)  # sr=16000で自動リサンプリング
     #audio_input, sample_rate = sf.read(aud_chunk)
 
     # 音声データの前処理
     #inputs = processor(audio_input, sampling_rate=16000, return_tensors="pt")
-    input_features = processor(chunk, sampling_rate=16000, return_tensors="pt").input_features.to(device)
-
-    # 推論の実行
-    generated_ids = model.generate(input_features)
-    transcription = processor.batch_decode(generated_ids, skip_special_tokens=True)
     #print(transcription)
-    return transcription
+
+
+
+
 
 file_list = ["7_aud.m4a"]
 file_path = "aud/"

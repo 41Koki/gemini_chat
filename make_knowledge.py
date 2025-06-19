@@ -111,16 +111,18 @@ for cla in class_list:
         docx_file = None
     else:
         docx_file = docx_path + f"{cla}_aud.docx"
-    #if not os.path.exists(pdf_file) or not os.path.exists(docx_file):
-        #st.error(f"{cla}のファイルが見つかりません。")
-        #continue
     # ナレッジベースを作成
     document_base += create_document_base(pdf_file, docx_file)
 
 know_st = time.time()
-#knowledge_base = FAISS.from_documents(document_base, HuggingFaceEmbeddings(model_name="sentence-transformers/paraphrase-MiniLM-L6-v2"))
 knowledge_base = FAISS.from_documents(document_base, HuggingFaceEmbeddings(model_name=download_path))
 knowledge_base.save_local("faiss_index/")
 print("get_knowledge_base")
 know_end = time.time()
 print(f"ナレッジベース作成時間: {know_end - know_st:.2f}秒")
+
+
+#if not os.path.exists(pdf_file) or not os.path.exists(docx_file):
+        #st.error(f"{cla}のファイルが見つかりません。")
+        #continue
+#knowledge_base = FAISS.from_documents(document_base, HuggingFaceEmbeddings(model_name="sentence-transformers/paraphrase-MiniLM-L6-v2"))

@@ -43,7 +43,7 @@ open_know_end = time.time()
 system_message = SystemMessage(content="あなたは授業アシスタントです。\n\
                                         授業の内容に関する質問に答えることができます。\n\
                                         質問に対する答えは、参考情報をもとに生成してください。\n\
-                                        参考資料で、pdfとdocxで同じ数字がファイル名に含まれるものは、同じ内容について記載されています。\n\
+                                        n回目の講義と言われたら第n回講義資料、または第n回講義録音を参考にしてください\n\
                                         もし、参考情報に関係する単語が全くない場合は、関係する単語が見つからなかったと回答してください。\n\
                                         もし、少しだけ関連する単語がある場合は、関連する単語を使って回答してください。\n")
 
@@ -81,7 +81,8 @@ if prompt:
     retriever_st = time.time()
     context_text = "\n\n".join([
                                 f"[{doc.metadata.get('source')}]\n{doc.page_content}" 
-                                for doc in retriever.invoke(prompt)]) # ユーザーからの入力に関連する情報を取得
+                                for doc in retriever.invoke(prompt)]) 
+    # ユーザーからの入力に関連する情報を取得
     print("get_context_text")
     context_st = time.time()
     print(f"コンテキスト取得時間: {context_st - retriever_st:.2f}秒")
@@ -89,7 +90,8 @@ if prompt:
     context_end = time.time()
     print(f"プロンプト生成時間: {context_end - context_st:.2f}秒")
     st.session_state.information = f"以下は、参考情報です。\n\n{context_text}"
-    conversation_history.append(HumanMessage(content=gen_prompt)) # 会話履歴にユーザーからの入力と参考情報を追加
+    conversation_history.append(HumanMessage(content=gen_prompt)) 
+    # 会話履歴にユーザーからの入力と参考情報を追加
 
 
     with st.chat_message("user"):

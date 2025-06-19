@@ -32,7 +32,11 @@ def get_lecture_title(file_path):
         n = n.replace("_aud", "")
         return f"第{n}回講義録音"
     else:
-        return f"第{n}回講義資料"
+        if "_1" in n:
+            n = n.replace("_1", "")
+            return f"第{n}回補助資料"
+        else:
+            return f"第{n}回講義資料"
 
 # pdfファイルを読み込み、検索可能なナレッジベースを作成する関数
 def create_document_base(file_path1, file_path2):

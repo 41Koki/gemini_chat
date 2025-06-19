@@ -24,7 +24,11 @@ def get_lecture_title(file_path):
     if "aud" in n:
         return f"第{n}回講義録音"
     else:
-        return f"第{n}回講義資料"
+        if "_1" in n:
+            n = n.replace("_1", "")
+            return f"第{n}回補助資料"
+        else:
+            return f"第{n}回講義資料"
 
 @st.cache_resource
 def load_embeddings_and_index():
